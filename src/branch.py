@@ -1,9 +1,9 @@
 from fileio import *
+from add import update_index
 
 def make_branch(branch_name):
     head_hash = fetch_head_commit_hash()
-    change_head_ref(branch_name)
-    update_head(head_hash)
+    change_branch_hash(branch_name, head_hash)
 
 
 def checkout_branch(branch_name):
@@ -13,6 +13,15 @@ def checkout_branch(branch_name):
         return
 
     change_head_ref(branch_name)
+    commit_hash = fetch_head_commit_hash()
+
+    root_tree_hash = fetch_commit_tree_hash(commit_hash)
+    blob_objects = deployment_tree(root_tree_hash, "", [])
+    for blob_object in blob_objects:
+        filename = blob_object[0]
+        blob_hash = blob_object[1]
+        update_index(blob_hash, filename)
+
     change_file_from_head()
 
 

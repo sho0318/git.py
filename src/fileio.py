@@ -132,23 +132,26 @@ def print_branch_name():
         else:
             print(name)
 
-#treeオブジェクトを展開し、ファイルの更新を行う。展開と更新分けれたら分けたい。
-def deployment_tree(object_hash, filename):
+#treeオブジェクトを展開し、blobオブジェクトのファイルパスとSHA-1ハッシュ、ファイルの中身を返す。
+def deployment_tree(object_hash, filename, blob_objects_array):
     separete_content = fetch_object(object_hash).split("\0")
 
     if "blob" in separete_content[0]:
         content = fetch_object(object_hash).split("\0")[-1]
-        update_file_from_blob(filename, content)
-        return
+        blob_objects_array.append([filename, object_hash, content])
+        return blob_objects_array
+        # update_file_from_blob(filename, content)
+        # return
     else:
         for content in separete_content[1:]:
             try:
                 tmp_hash = content.split()[0]
                 tmp_name = os.path.join(filename, content.split()[1])
             except:
-
-                return
-            deployment_tree(tmp_hash, tmp_name)
+                return blob_objects_array
+            blob_objects_array = deployment_tree(tmp_hash, tmp_name, blob_objects_array)
+        return blob_objects_array
+    
     
 #blobオブジェクトの内容に合わせて、ファイルを変更する
 def update_file_from_blob(filepath, blob_content):
@@ -158,11 +161,20 @@ def update_file_from_blob(filepath, blob_content):
 #HEADの参照しているcommitオブジェクトの内容に合わせて、ファイルを変更する
 def change_file_from_head():
     head_hash = fetch_head_commit_hash()
-    commit_object = fetch_object(head_hash)
+    root_tree_hash = fetch_commit_tree_hash(head_hash)
+
+    blob_objects = deployment_tree(root_tree_hash, "", [])
+    for blob_object in blob_objects:
+        filepath = blob_object[0]
+        blob_content = blob_object[2]
+        update_file_from_blob(filepath, blob_content)
+
+#commitオブジェクトの参照しているtreeオブジェクトのSHA-1ハッシュを取得
+def fetch_commit_tree_hash(commit_hash):
+    commit_object = fetch_object(commit_hash)
     commit_content = commit_object.split("\0")[1]
     root_tree_hash = commit_content.split()[1]
-
-    deployment_tree(root_tree_hash, "")
+    return root_tree_hash
 
 #オブジェクトのタイプを返す
 def get_object_type(object_hash):
@@ -171,3 +183,9 @@ def get_object_type(object_hash):
     header = object_content.split("\0")[0]
     object_type = header.split()[0]
     return object_type
+
+#ブランチの参照するcommitオブジェクトを変更する
+def change_branch_hash(branch_name, commit_hash):
+    path = os.path.join("git", "refs", "heads", branch_name)
+    with open(path, "w") as f:
+        f.write(commit_hash)

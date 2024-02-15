@@ -4,7 +4,7 @@ from add import add_file
 from commit import commit
 from log import check_index, check_log
 from branch import make_branch, checkout_branch, checkout_hash
-from fileio import print_branch_name
+from fileio import print_branch_name, fetch_object
 from init import git_init
 
 if __name__ == "__main__":
@@ -70,6 +70,14 @@ if __name__ == "__main__":
 
     elif command == "index":
         check_index()
+
+    elif command == "print-object":
+        try:
+            argument = args[2]
+        except:
+            print("you need set the object hash")
+            sys.exit()
+        print(fetch_object(argument))
 
     else:
         print("you type the wrong command")
