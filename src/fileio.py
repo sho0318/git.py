@@ -140,8 +140,6 @@ def deployment_tree(object_hash, filename, blob_objects_array):
         content = fetch_object(object_hash).split("\0")[-1]
         blob_objects_array.append([filename, object_hash, content])
         return blob_objects_array
-        # update_file_from_blob(filename, content)
-        # return
     else:
         for content in separete_content[1:]:
             try:
